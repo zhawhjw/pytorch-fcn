@@ -130,6 +130,8 @@ def main():
         max_iter=args.max_iteration,
         interval_validate=4000,
     )
+
+
     trainer.epoch = start_epoch
     trainer.iteration = start_iteration
     trainer.train()

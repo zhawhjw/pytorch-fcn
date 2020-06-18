@@ -210,7 +210,7 @@ class SidewalkClassSeg(data.Dataset):
         lbl = PIL.Image.open(lbl_file)
         lbl = np.array(lbl, dtype=np.uint8)
         # lbl = mat['GTcls'][0]['Segmentation'][0].astype(np.int32)
-        lbl[lbl == 0] = -1
+        lbl[lbl == 255] = 1
         if self._transform:
             return self.transform(img, lbl)
         else:

@@ -164,7 +164,7 @@ class SidewalkClassSeg(data.Dataset):
         'Unlabeled',
         'Sidewalk',
     ])
-
+    mean_bgr = np.array([104.00698793, 116.66876762, 122.67891434])
     def __init__(self, dataset_dir, split='train', transform=False):
         self.dataset_dir = dataset_dir
         self.split = split
@@ -196,6 +196,9 @@ class SidewalkClassSeg(data.Dataset):
                 'lbl': lbl_file,
             })
 
+    def __len__(self):
+        return len(self.files[self.split])
+
     def __getitem__(self, index):
         data_file = self.files[self.split][index]
         # load image
@@ -212,6 +215,24 @@ class SidewalkClassSeg(data.Dataset):
             return self.transform(img, lbl)
         else:
             return img, lbl
+
+    def transform(self, img, lbl):
+        img = img[:, :, ::-1]  # RGB -> BGR
+        img = img.astype(np.float64)
+        img -= self.mean_bgr
+        img = img.transpose(2, 0, 1)
+        img = torch.from_numpy(img).float()
+        lbl = torch.from_numpy(lbl).long()
+        return img, lbl
+
+    def untransform(self, img, lbl):
+        img = img.numpy()
+        img = img.transpose(1, 2, 0)
+        img += self.mean_bgr
+        img = img.astype(np.uint8)
+        img = img[:, :, ::-1]
+        lbl = lbl.numpy()
+        return img, lbl
 
         # data_file = self.files[index]
         # # load image

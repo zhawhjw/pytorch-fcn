@@ -5,14 +5,17 @@ import datetime
 import os
 import os.path as osp
 
+import sys
 import torch
 import yaml
 
-import torchfcn
+sys.path.append("../..")
 
-from train_fcn32s import get_parameters
-from train_fcn32s import git_hash
+from torchfcn import models, datasets, Trainer
 
+
+from examples.voc.train_fcn32s import get_parameters
+from examples.voc.train_fcn32s import git_hash
 
 here = osp.dirname(osp.abspath(__file__))
 
@@ -43,7 +46,7 @@ def main():
     )
     parser.add_argument(
         '--pretrained-model',
-        default=torchfcn.models.FCN16s.download(),
+        default=models.FCN16s.download(),
         help='pretrained model of FCN16s',
     )
     args = parser.parse_args()
@@ -72,33 +75,33 @@ def main():
     kwargs = {'num_workers': 4, 'pin_memory': True} if cuda else {}
 
     train_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.SidewalkClassSeg(root, split='train', transform=True),
+        datasets.SidewalkClassSeg(root, split='train', transform=True),
         batch_size=1, shuffle=True, **kwargs)
 
     val_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.SidewalkClassSeg(
+        datasets.SidewalkClassSeg(
             root, split='seg11valid', transform=True),
         batch_size=1, shuffle=False, **kwargs)
 
     # 2. model
 
-    model = torchfcn.models.FCN8s(n_class=2)
+    model = models.FCN8s(n_class=2)
     start_epoch = 0
     start_iteration = 0
 
-    if args.resume:
-        checkpoint = torch.load(args.resume)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        start_epoch = checkpoint['epoch']
-        start_iteration = checkpoint['iteration']
-    else:
-        fcn16s = torchfcn.models.FCN16s()
-        state_dict = torch.load(args.pretrained_model)
-        try:
-            fcn16s.load_state_dict(state_dict)
-        except RuntimeError:
-            fcn16s.load_state_dict(state_dict['model_state_dict'])
-        model.copy_params_from_fcn16s(fcn16s)
+    # if args.resume:
+    #     checkpoint = torch.load(args.resume)
+    #     model.load_state_dict(checkpoint['model_state_dict'])
+    #     start_epoch = checkpoint['epoch']
+    #     start_iteration = checkpoint['iteration']
+    # else:
+    #     fcn16s = models.FCN16s()
+    #     state_dict = torch.load(args.pretrained_model)
+    #     try:
+    #         fcn16s.load_state_dict(state_dict)
+    #     except RuntimeError:
+    #         fcn16s.load_state_dict(state_dict['model_state_dict'])
+    #     model.copy_params_from_fcn16s(fcn16s)
 
     if cuda:
         model = model.cuda()
@@ -117,7 +120,7 @@ def main():
     if args.resume:
         optim.load_state_dict(checkpoint['optim_state_dict'])
 
-    trainer = torchfcn.Trainer(
+    trainer = Trainer(
         cuda=cuda,
         model=model,
         optimizer=optim,

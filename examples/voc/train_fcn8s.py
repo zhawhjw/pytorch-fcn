@@ -38,6 +38,10 @@ def main():
         '--momentum', type=float, default=0.99, help='momentum',
     )
     parser.add_argument(
+        '--dataroot', default=None, type=str,
+                        help='A path to an image to use for training.'
+    )
+    parser.add_argument(
         '--pretrained-model',
         default=torchfcn.models.FCN16s.download(),
         help='pretrained model of FCN16s',
@@ -63,21 +67,25 @@ def main():
 
     # 1. dataset
 
-    root = osp.expanduser('~/data/datasets')
+    root = osp.expanduser(args.dataroot)
+
     kwargs = {'num_workers': 4, 'pin_memory': True} if cuda else {}
+
     train_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.SBDClassSeg(root, split='train', transform=True),
+        torchfcn.datasets.SidewalkClassSeg(root, split='train', transform=True),
         batch_size=1, shuffle=True, **kwargs)
+
     val_loader = torch.utils.data.DataLoader(
-        torchfcn.datasets.VOC2011ClassSeg(
+        torchfcn.datasets.SidewalkClassSeg(
             root, split='seg11valid', transform=True),
         batch_size=1, shuffle=False, **kwargs)
 
     # 2. model
 
-    model = torchfcn.models.FCN8s(n_class=21)
+    model = torchfcn.models.FCN8s(n_class=2)
     start_epoch = 0
     start_iteration = 0
+
     if args.resume:
         checkpoint = torch.load(args.resume)
         model.load_state_dict(checkpoint['model_state_dict'])
@@ -91,6 +99,7 @@ def main():
         except RuntimeError:
             fcn16s.load_state_dict(state_dict['model_state_dict'])
         model.copy_params_from_fcn16s(fcn16s)
+
     if cuda:
         model = model.cuda()
 
